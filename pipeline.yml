@@ -12,6 +12,15 @@ resources:
     uri: {{git-bosh-release}}
     branch: {{git-bosh-release-branch}}
 
+- name: version
+  type: semver
+  source:
+    driver: gcs
+    bucket: concourse-bosh-releases
+    initial_version: 0.0.1
+    key: current-version
+    json_key: ((google_account_creds))
+
 - name: gcs-bucket
   type: google-cloud-storage
   source:
@@ -26,6 +35,8 @@ jobs:
   plan:
     - get: bosh-release
       resource: git-bosh-release
+    - get: version
+      params: {bump: patch}
     - task: create-release
       input_mapping:
         bosh-release: bosh-release
@@ -37,11 +48,20 @@ jobs:
                   repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
           inputs:
             - name: bosh-release
+            - name: version
           outputs:
             - name: release
           run:
-            path: bosh
-            args: [-n, create-release, --dir=bosh-release, --tarball=release/release-1.tgz]
+            path: bash
+            args: 
+                - -exc
+                - |
+                    ls -la
+                    VERSION=$(cat version/version)
+                    bosh -n create-release --dir=bosh-release --tarball=release/release-$VERSION.tgz
 
     - put: gcs-bucket
-      params: { file: release/release-1.tgz }
+      params: { file: release/release-*.tgz }
+
+    - put: version
+      params: { file: version/version }
