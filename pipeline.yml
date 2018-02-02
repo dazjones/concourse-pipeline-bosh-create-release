@@ -41,6 +41,7 @@ jobs:
     - task: create-release
       input_mapping:
         bosh-release: bosh-release
+        git-bosh-release: bosh-release
       config:
           platform: linux
           image_resource: 
@@ -57,7 +58,6 @@ jobs:
             args: 
                 - -exc
                 - |
-                    ls -la
                     VERSION=$(cat version/version)
                     bosh -n create-release --dir=bosh-release --tarball=release/release-$VERSION.tgz
 
