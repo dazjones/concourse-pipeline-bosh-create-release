@@ -1,0 +1,47 @@
+---
+resource_types:
+      - name: google-cloud-storage
+        type: docker-image
+        source:
+            repository: frodenas/gcs-resource
+
+resources:
+- name: git-bosh-release
+  type: git
+  source:
+    uri: {{git-bosh-release}}
+    branch: {{git-bosh-release-branch}}
+
+- name: gcs-bucket
+  type: google-cloud-storage
+  source:
+      bucket: concourse-bosh-releases
+      json_key: ((google_account_creds))
+      regexp: releases/release-(.*).tgz
+
+jobs:
+- name: job-bosh-create-release-upload
+  public: true
+  serial: true
+  plan:
+    - get: bosh-release
+      resource: git-bosh-release
+    - task: create-release
+      input_mapping:
+        bosh-release: bosh-release
+      config:
+          platform: linux
+          image_resource: 
+              type: docker-image
+              source:
+                  repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
+          inputs:
+            - name: bosh-release
+          outputs:
+            - name: release
+          run:
+            path: bosh
+            args: [-n, create-release, --dir=bosh-release, --tarball=release/release-1.tgz]
+
+    - put: gcs-bucket
+      params: { file: release/release-1.tgz }
