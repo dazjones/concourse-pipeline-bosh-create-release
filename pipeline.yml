@@ -16,7 +16,7 @@ resources:
   type: semver
   source:
     driver: gcs
-    bucket: concourse-bosh-releases
+    bucket: ((gcs_bucket_name))
     initial_version: 0.0.1
     key: current-version
     json_key: ((google_account_creds))
