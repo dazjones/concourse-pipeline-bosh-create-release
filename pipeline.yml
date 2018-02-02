@@ -35,6 +35,7 @@ jobs:
   plan:
     - get: bosh-release
       resource: git-bosh-release
+      trigger: true
     - get: version
       params: {bump: patch}
     - task: create-release
